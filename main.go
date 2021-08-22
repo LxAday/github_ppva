@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	if e := do.New().Run(); e != nil {
-		log.Fatal(e)
+	if err := do.New().Run(); err != nil {
+		log.Fatal(err)
 	}
 }

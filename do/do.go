@@ -39,19 +39,19 @@ func New() *Do {
 			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 			Timeout:   time.Second * 30,
 		},
-		writeMap: map[string]string{},
+		writeMap: make(map[string]string),
 	}
 }
 
 //Run 运行
 func (d *Do) Run() error {
 	//先清空已有配置
-	if e := d.clearConf(); e != nil {
-		return goerror.Wrap(e, "Run")
+	if err := d.clearConf(); err != nil {
+		return goerror.Wrap(err, "Run")
 	}
 	for k, v := range url {
-		if e := d.query(v, k); e != nil {
-			fmt.Println(goerror.Wrap(e, "Run2"))
+		if err := d.query(v, k); err != nil {
+			fmt.Println(goerror.Wrap(err, "Run2"))
 		}
 	}
 	if len(d.writeMap) > 0 {
@@ -62,12 +62,12 @@ func (d *Do) Run() error {
 
 //write 修改hosts
 func (d *Do) write() error {
-	file, e := os.ReadFile(hostsPath)
-	if e != nil {
-		return goerror.Wrap(e, "write")
+	file, err := os.ReadFile(hostsPath)
+	if err != nil {
+		return goerror.Wrap(err, "write")
 	}
 	contentArr := strings.Split(string(file), "\n")
-	var newContentArr []string
+	newContentArr := make([]string, 0)
 look:
 	for _, v := range contentArr {
 		if !strings.HasPrefix(v, "#") {
@@ -89,13 +89,13 @@ look:
 //url 请求地址
 //host 配置对应域名
 func (d *Do) query(url, host string) error {
-	b, e := d.ping(host)
-	if e != nil {
-		return goerror.Wrap(e, "query")
+	b, err := d.ping(host)
+	if err != nil {
+		return goerror.Wrap(err, "query")
 	}
 	if !b {
-		if e = d.request(url, host); e != nil {
-			return goerror.Wrap(e, "query1")
+		if err = d.request(url, host); err != nil {
+			return goerror.Wrap(err, "query1")
 		}
 	}
 	return nil
@@ -125,9 +125,9 @@ func (d *Do) ping(host string) (bool, error) {
 
 //request 请求查询ip
 func (d *Do) request(url, host string) error {
-	request, e := http.NewRequest("GET", url, nil)
-	if e != nil {
-		return goerror.Wrap(e, "request")
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return goerror.Wrap(err, "request")
 	}
 	request.Header.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
 	request.Header.Add("cache-control", "no-cache")
@@ -135,14 +135,14 @@ func (d *Do) request(url, host string) error {
 	request.Header.Add("referer", "https://www.ipaddress.com/")
 	request.Header.Add("upgrade-insecure-requests", "1")
 	request.Header.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36")
-	do, e := d.req.Do(request) //请求
-	if e != nil {
-		return goerror.Wrap(e, "request1")
+	do, err := d.req.Do(request) //请求
+	if err != nil {
+		return goerror.Wrap(err, "request1")
 	}
 	defer do.Body.Close()
 	buffer := &bytes.Buffer{}
-	if _, e = io.Copy(buffer, do.Body); e != nil {
-		return goerror.Wrap(e, "request2")
+	if _, err = io.Copy(buffer, do.Body); err != nil {
+		return goerror.Wrap(err, "request2")
 	}
 	ip := regexp.MustCompile(`<tr><th>IP Address</th><td><ul class="comma-separated"><li>` + regIp + `</li></ul>`).FindString(buffer.String())
 	if ip != "" {
